@@ -1,0 +1,41 @@
+!pip install findspark
+import findspark
+
+# Localizar e configurar o Spark
+findspark.init()
+
+# Importar as bibliotecas necessárias
+from pyspark.sql import SparkSession
+
+# Criar uma sessão do Spark
+spark = SparkSession.builder.appName("ExemploMapReduce").getOrCreate()
+
+# Carregar os arquivos CSV em um DataFrame
+df = spark.read.csv("C:/Users/metaha/Downloads/2022/2022/*.csv", header=True)
+
+# Função de mapeamento: extrair informações relevantes do DataFrame
+def extrair_informacoes_linha(row):
+    # Supondo que as colunas sejam: CompanhiaAerea, DestinoVoo
+    Empresa_Aerea = row.Empresa_Aerea
+    Descricao_Aeroporto_Destino = row.Descrica_Aeroporto_Destino
+    return ((companhia, destino), 1)
+
+# Aplicar a função de mapeamento a cada linha do DataFrame
+rdd_mapeado = df.rdd.map(extrair_informacoes_linha)
+
+# Função de redução: realizar a contagem de voos por companhia e destino
+def contar_voos_por_companhia_destino(valor1, valor2):
+    return valor1 + valor2
+
+# Aplicar a função de redução ao RDD mapeado
+rdd_reduzido = rdd_mapeado.reduceByKey(contar_voos_por_companhia_destino)
+
+# Ordenar os resultados por contagem de voos em ordem decrescente
+resultados_ordenados = rdd_reduzido.sortBy(lambda x: x[1], ascending=False).collect()
+
+# Exibir os resultados
+Print for resultado in resultados_ordenados:
+    print
+    Empresa_Aerea, Descricao_Aeroporto_Destino = resultado[0]
+    Situacao_Voo = resultado[1]
+    print(f"Empresa_Aerea: {Empresa_Aerea}, Descricao_Aeroporto_Destino: {Descricao_Aeroporto_Destino}, Situacao_Voo: {Situacao_Voo}")
