@@ -1,0 +1,36 @@
+import findspark
+from pyspark.sql import SparkSession
+
+# Inicializando o SparkSession
+findspark.init()
+spark = SparkSession.builder.appName("MapReduce").getOrCreate()
+
+def main():
+    # Carregando os arquivos CSV em um DataFrame
+    df = spark.read.csv("C:/Users/metaha/Downloads/2022/*.csv", header=True)
+
+    def extrair_informacoes_linha(row):
+        Empresa_Aerea = row.Empresa_Aerea
+        Descricao_Aeroporto_Destino = row.Descricao_Aeroporto_Destino
+        Situacao_Voo = row.Situacao_Voo
+        return ((Empresa_Aerea, Descricao_Aeroporto_Destino), 1)
+
+    rdd_mapeado = df.rdd.map(extrair_informacoes_linha)
+
+    def contar_voos_por_companhia_destino(valor1, valor2):
+        return valor1 + valor2
+
+    rdd_reduzido = rdd_mapeado.reduceByKey(contar_voos_por_companhia_destino)
+
+    resultados_ordenados = rdd_reduzido.sortBy(lambda x: x[1], ascending=False).collect()
+
+    # Imprimindo os resultados
+    print("Resultados:")
+    for resultado in resultados_ordenados:
+        Empresa_Aerea, Descricao_Aeroporto_Destino = resultado[0]
+        Situacao_Voo = resultado[1]
+        print(f"Empresa_Aerea: {Empresa_Aerea}, Descricao_Aeroporto_Destino: {Descricao_Aeroporto_Destino}, Situacao_Voo: {Situacao_Voo}")
+
+
+if __name__ == "__main__":
+    main()
