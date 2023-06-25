@@ -1,0 +1,71 @@
+import os
+import glob
+
+# Função de mapeamento (mapper)
+def mapper():
+    # Itera sobre os arquivos de entrada
+    input_files = glob.glob('C:/Users/metaha/Downloads/2022/*.csv')
+    for file_path in input_files:
+        with open(file_path, 'r', encoding='utf-8') as file:
+            # Itera sobre as linhas de cada arquivo
+            for line in file:
+                # Remove espaços em branco e divide a linha em campos usando o delimitador ";"
+                fields = line.strip().split(';')
+                
+                # Extrai os campos relevantes
+                airline = fields[1]  # Substitua pelo índice correto do campo da empresa aérea
+                origin = fields[7]  # Substitua pelo índice correto do campo da descrição do aeroporto de origem
+                destination = fields[11]  # Substitua pelo índice correto do campo da descrição do aeroporto de destino
+                
+                # Emite o par chave-valor para o reducer
+                yield f"{airline}-{origin}-{destination}", 1
+
+# Função de redução (reducer)
+def reducer(mapped_pairs):
+    flight_count = {}
+    
+    # Itera sobre os pares chave-valor
+    for flight, count in mapped_pairs:
+        # Incrementa a contagem para o voo
+        if flight in flight_count:
+            flight_count[flight] += count
+        else:
+            flight_count[flight] = count
+    
+    # Ordena os voos com base na contagem em ordem decrescente
+    ranked_flights = sorted(flight_count.items(), key=lambda x: x[1], reverse=True)
+    
+    # Retorna os voos ordenados
+    return ranked_flights
+
+# Executa o MapReduce
+if __name__ == "__main__":
+    # Executa o mapeamento
+    mapped_pairs = mapper()
+    
+    # Executa a redução e obtém os voos ordenados
+    ranked_flights = reducer(mapped_pairs)
+    
+    # Define o caminho do diretório de saída
+    output_directory = 'C:/Users/metaha/Desktop/output'
+    
+    # Cria o diretório de saída se não existir
+    if not os.path.exists(output_directory):
+        os.makedirs(output_directory)
+    
+    # Define o caminho do arquivo de saída
+    output_file = os.path.join(output_directory, 'result.txt')
+    
+    # Salva os voos ordenados no arquivo de saída
+    with open(output_file, 'w', encoding='utf-8') as file:
+        for flight, count in ranked_flights:
+            flight_info = flight.split('-')
+            if len(flight_info) == 3:
+                airline, origin, destination = flight_info
+                file.write(f"Empresa Aérea: {airline}\n")
+                file.write(f"Sigla ICAO Aeroporto Origem: {origin}\n")
+                file.write(f"Sigla ICAO Aeroporto Destino: {destination}\n")
+                file.write(f"Quantidade de Voos: {count}\n")
+                file.write("------------------------\n")
+            
+    print("Processamento concluído. O resultado foi salvo em", output_file)
